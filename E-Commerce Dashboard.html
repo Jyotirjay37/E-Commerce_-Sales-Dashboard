@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce Sales Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .filters {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 8px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .filter-group select:focus, .filter-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71, #3498db);
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-size: 1.1em;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .metric-change {
+            font-size: 0.9em;
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .positive { background: #d4edda; color: #155724; }
+        .negative { background: #f8d7da; color: #721c24; }
+
+        .charts-container {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .tables-section {
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .tables-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .table-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .table-card h3 {
+            font-size: 1.2em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .insights-section {
+            padding: 30px;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+        }
+
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .insight-card h4 {
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            color: #ecf0f1;
+        }
+
+        .insight-card p {
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .tables-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <h1>🚀 E-commerce Sales Dashboard</h1>
+            <p>Real-time Analytics & Business Intelligence</p>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>Date Range</label>
+                <select id="dateRange">
+                    <option value="all">All Time</option>
+                    <option value="ytd" selected>Year to Date</option>
+                    <option value="last30">Last 30 Days</option>
+                    <option value="last7">Last 7 Days</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Category</label>
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="clothing">Clothing & Fashion</option>
+                    <option value="home">Home & Garden</option>
+                    <option value="sports">Sports & Outdoors</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Region</label>
+                <select id="regionFilter">
+                    <option value="all">All Regions</option>
+                    <option value="north">North America</option>
+                    <option value="europe">Europe</option>
+                    <option value="asia">Asia Pacific</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="metrics-row">
+            <div class="metric-card">
+                <div class="metric-value" id="totalRevenue">$2.4M</div>
+                <div class="metric-label">Total Revenue</div>
+                <div class="metric-change positive">+12.5% vs last period</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="totalOrders">15.2K</div>
+                <div class="metric-label">Total Orders</div>
+                <div class="metric-change positive">+8.3% vs last period</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avgOrderValue">$158</div>
+                <div class="metric-label">Avg Order Value</div>
+                <div class="metric-change positive">+4.2% vs last period</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="conversionRate">3.7%</div>
+                <div class="metric-label">Conversion Rate</div>
+                <div class="metric-change negative">-0.8% vs last period</div>
+            </div>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-card">
+                <div class="chart-title">📈 Monthly Sales Trend</div>
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">🏷️ Category Performance</div>
+                <canvas id="categoryChart"></canvas>
+            </div>
+            <div class="chart-card full-width">
+                <div class="chart-title">🗺️ Regional Sales Distribution</div>
+                <canvas id="regionalChart"></canvas>
+            </div>
+        </div>
+
+        <div class="tables-section">
+            <div class="section-title">📊 Detailed Analytics</div>
+            <div class="tables-grid">
+                <div class="table-card">
+                    <h3>🏆 Top Products</h3>
+                    <table id="topProductsTable">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Sales</th>
+                                <th>Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>iPhone 15 Pro</td><td>2,345</td><td>$2.1M</td></tr>
+                            <tr><td>MacBook Air M3</td><td>1,876</td><td>$1.8M</td></tr>
+                            <tr><td>AirPods Pro</td><td>3,421</td><td>$0.8M</td></tr>
+                            <tr><td>Samsung Galaxy S24</td><td>1,654</td><td>$1.3M</td></tr>
+                            <tr><td>Dell XPS 13</td><td>987</td><td>$1.1M</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-card">
+                    <h3>🌟 Customer Segments</h3>
+                    <table id="customerSegmentTable">
+                        <thead>
+                            <tr>
+                                <th>Segment</th>
+                                <th>Customers</th>
+                                <th>Avg Spend</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Premium</td><td>2,341</td><td>$485</td></tr>
+                            <tr><td>Regular</td><td>8,765</td><td>$125</td></tr>
+                            <tr><td>Budget</td><td>4,123</td><td>$67</td></tr>
+                            <tr><td>New</td><td>1,987</td><td>$89</td></tr>
+                            <tr><td>Returning</td><td>6,543</td><td>$156</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="insights-section">
+            <div class="section-title">💡 Key Business Insights</div>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <h4>🎯 Best-Selling Products</h4>
+                    <p>Electronics dominate with 45% of total sales. iPhone 15 Pro leads individual product sales, while tech accessories show consistent growth patterns.</p>
+                </div>
+                <div class="insight-card">
+                    <h4>📅 Sales Trends</h4>
+                    <p>Peak sales occur during November-December (holiday season) and back-to-school period (August-September). Mobile purchases increase by 60% during weekends.</p>
+                </div>
+                <div class="insight-card">
+                    <h4>💰 Revenue Categories</h4>
+                    <p>Electronics ($1.2M), Fashion ($580K), and Home & Garden ($420K) are top revenue generators. Premium segment customers have 3x higher lifetime value.</p>
+                </div>
+                <div class="insight-card">
+                    <h4>🌍 Regional Performance</h4>
+                    <p>North America leads with 42% market share. Asia Pacific shows highest growth rate (+28% YoY). European market has highest conversion rates (4.2%).</p>
+                </div>
+                <div class="insight-card">
+                    <h4>📈 Growth Opportunities</h4>
+                    <p>Cross-selling accessories increases order value by 35%. Email marketing campaigns show 2.8x ROI. Mobile app users spend 40% more than web users.</p>
+                </div>
+                <div class="insight-card">
+                    <h4>⚠️ Areas for Improvement</h4>
+                    <p>Cart abandonment rate at 68% needs attention. Customer support response time averages 4.2 hours. Return rate in clothing category is 12%.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for demonstration
+        const salesData = {
+            monthly: [120000, 135000, 150000, 165000, 180000, 195000, 210000, 225000, 240000, 220000, 280000, 300000],
+            categories: [1200000, 580000, 420000, 350000, 280000],
+            regions: [1008000, 840000, 672000, 280000]
+        };
+
+        // Initialize charts
+        function initCharts() {
+            // Sales Trend Chart
+            const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
+            new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Monthly Sales ($)',
+                        data: salesData.monthly,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#3498db',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000) + 'K';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Category Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Electronics', 'Fashion', 'Home & Garden', 'Sports', 'Books'],
+                    datasets: [{
+                        data: salesData.categories,
+                        backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Regional Chart
+            const regionalCtx = document.getElementById('regionalChart').getContext('2d');
+            new Chart(regionalCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['North America', 'Europe', 'Asia Pacific', 'Other'],
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: salesData.regions,
+                        backgroundColor: ['#e74c3c', '#f39c12', '#2ecc71', '#3498db'],
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000000).toFixed(1) + 'M';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Simulate real-time updates
+        function updateMetrics() {
+            const metrics = [
+                { id: 'totalRevenue', base: 2400000, variance: 50000 },
+                { id: 'totalOrders', base: 15200, variance: 500 },
+                { id: 'avgOrderValue', base: 158, variance: 10 },
+                { id: 'conversionRate', base: 3.7, variance: 0.2 }
+            ];
+
+            metrics.forEach(metric => {
+                const element = document.getElementById(metric.id);
+                const randomChange = (Math.random() - 0.5) * metric.variance;
+                const newValue = metric.base + randomChange;
+                
+                if (metric.id === 'totalRevenue') {
+                    element.textContent = '$' + (newValue / 1000000).toFixed(1) + 'M';
+                } else if (metric.id === 'totalOrders') {
+                    element.textContent = (newValue / 1000).toFixed(1) + 'K';
+                } else if (metric.id === 'avgOrderValue') {
+                    element.textContent = '$' + Math.round(newValue);
+                } else if (metric.id === 'conversionRate') {
+                    element.textContent = newValue.toFixed(1) + '%';
+                }
+            });
+        }
+
+        // Filter functionality
+        function setupFilters() {
+            const filters = ['dateRange', 'categoryFilter', 'regionFilter'];
+            filters.forEach(filterId => {
+                document.getElementById(filterId).addEventListener('change', function() {
+                    // Show loading state
+                    document.body.style.cursor = 'wait';
+                    setTimeout(() => {
+                        updateMetrics();
+                        document.body.style.cursor = 'default';
+                    }, 1000);
+                });
+            });
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            setupFilters();
+            
+            // Update metrics every 30 seconds for demo
+            setInterval(updateMetrics, 30000);
+            
+            // Add some interactive animations
+            const cards = document.querySelectorAll('.metric-card, .chart-card, .table-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px) scale(1.02)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
